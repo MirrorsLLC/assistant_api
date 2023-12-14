@@ -20,11 +20,11 @@ if "messages" not in st.session_state:
 if "chat_initiated" not in st.session_state:
     # Get environment variables
     _ = load_dotenv(find_dotenv()) # read local .env file
-    openai.api_key = os.getenv('OPENAI_API_KEY', default=None)
+    openai_api_key = os.getenv('OPENAI_API_KEY', default=None)
     assistant_id = os.getenv('ASSISTANT_ID', default=None)
 
     # Initialize assistant
-    st.session_state.manager = init_assistant(openai.api_key, assistant_id)
+    st.session_state.manager = init_assistant(openai_api_key, assistant_id)
 
     # Connect to database
     st.session_state.chat_initiated = True
