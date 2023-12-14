@@ -85,12 +85,7 @@ class AssistantManager:
     def process_messages(self):
         messages = self.client.beta.threads.messages.list(thread_id=self.thread.id)
         return messages.data[0].content[0].text.value
-
-        # for msg in messages.data:
-        #     role = msg.role
-        #     content = msg.content[0].text.value
-        #     print(f"{role.capitalize()}: {content}")
-
+    
     def call_required_functions(self, required_actions):
         tool_outputs = []
 
