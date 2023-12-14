@@ -14,7 +14,7 @@ def send_email_to_real_agent():
 
 
 class AssistantManager:
-    def __init__(self, api_key, model="gpt-4-1106-preview"):
+    def __init__(self, api_key, model="gpt-3.5-turbo-1106"):
         self.client = OpenAI(api_key=api_key)
         self.model = model
         self.assistant = None
@@ -67,16 +67,15 @@ class AssistantManager:
 
     def wait_for_completion(self):
         while True:
-            time.sleep(5)
+            time.sleep(1)
             run_status = self.client.beta.threads.runs.retrieve(
                 thread_id=self.thread.id,
                 run_id=self.run.id
             )
-            print(run_status.model_dump_json(indent=4))
+            # print(run_status.model_dump_json(indent=4))
 
             if run_status.status == 'completed':
-                self.process_messages()
-                break
+                 return self.process_messages()
             elif run_status.status == 'requires_action':
                 print("Function Calling ...")
                 self.call_required_functions(run_status.required_action.submit_tool_outputs.model_dump())
@@ -85,11 +84,12 @@ class AssistantManager:
 
     def process_messages(self):
         messages = self.client.beta.threads.messages.list(thread_id=self.thread.id)
+        return messages.data[0].content[0].text.value
 
-        for msg in messages.data:
-            role = msg.role
-            content = msg.content[0].text.value
-            print(f"{role.capitalize()}: {content}")
+        # for msg in messages.data:
+        #     role = msg.role
+        #     content = msg.content[0].text.value
+        #     print(f"{role.capitalize()}: {content}")
 
     def call_required_functions(self, required_actions):
         tool_outputs = []
@@ -114,12 +114,7 @@ class AssistantManager:
             tool_outputs=tool_outputs
         )
 
-
-
-def main():
-    api_key = os.getenv("OPENAI_API_KEY")
-    assistant_id = "asst_YlvNgooU8NdVhIWqG9XeiuU6"  
-
+def init_assistant(api_key, assistant_id):
     manager = AssistantManager(api_key)
     manager.retrieve_assistant(assistant_id)
     if not manager.assistant:
@@ -145,17 +140,34 @@ def main():
                 }
             }]
         )
-    
+    manager.create_thread()
+    return manager
+
+
+def get_response(manager: AssistantManager, user_input: str) -> str:
+    user_input = user_input[-1]['content']
+    manager.add_message_to_thread(role="user", content=user_input)
+    manager.run_assistant(instructions="")
+    output_message = manager.wait_for_completion()
+    return output_message
+
+
+def main():
+    api_key = os.getenv("OPENAI_API_KEY")
+    assistant_id = "asst_YlvNgooU8NdVhIWqG9XeiuU6"
+    manager = init_assistant(api_key, assistant_id)
+
     while True:
         user_input = input("You: ")
         if user_input.lower() in ['exit', 'quit', 'bye']:
             print("Goodbye!")
             break
 
-        manager.create_thread()
         manager.add_message_to_thread(role="user", content=user_input)
         manager.run_assistant(instructions="")
-        manager.wait_for_completion()
+        output_message = manager.wait_for_completion()
+        print(f"Assistant: {output_message}")
+
 
 if __name__ == '__main__':
     main()
